@@ -1,11 +1,29 @@
 import logging
+import os
+from threading import Thread
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# Logging setup
+# --- Dummy Web Server to fix Render Port Timeout ---
+web_app = Flask('')
+
+@web_app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
+# --- Logging setup ---
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# ⚠️ Admin ID & Bot Token
+# ⚠️ Admin ID & Correct Bot Token
 ADMIN_ID = 8123711856 
 BOT_TOKEN = "8899456179:AAE1TFmllNqqtAYs3rgOylJDRWK7GcsH5no"
 
@@ -24,7 +42,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user = query.from_user
 
-    # ১. ON Button
     if query.data == "btn_on":
         await query.edit_message_text("⏳ **Processing...** Please wait.", parse_mode="Markdown")
         
@@ -41,7 +58,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown"
         )
 
-    # ২. OFF Button
     elif query.data == "btn_off":
         await query.edit_message_text("⏳ **Processing...** Please wait.", parse_mode="Markdown")
         
@@ -58,7 +74,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown"
         )
 
-    # ৩. BOT SENT ANOTHER GUILD
     elif query.data == "btn_guild":
         msg_text = (
             "🤖 **BOT SENT ANOTHER GUILD**\n\n"
@@ -70,7 +85,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await query.edit_message_text(msg_text, parse_mode="Markdown")
 
-    # ৪. CREATE NEW BOT
     elif query.data == "btn_create_bot":
         msg_text = (
             "🚀 **CREATE NEW BOT**\n\n"
@@ -82,7 +96,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await query.edit_message_text(msg_text, parse_mode="Markdown")
 
-    # ৫. Admin Approve Action
     elif query.data.startswith("approve_"):
         data_parts = query.data.split("_")
         user_chat_id = int(data_parts[1])
@@ -103,7 +116,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text="✅ **Successful!** Your request has been completed."
             )
 
-    # ৬. Admin Reject Action
     elif query.data.startswith("reject_"):
         data_parts = query.data.split("_")
         user_chat_id = int(data_parts[1])
@@ -156,6 +168,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 if __name__ == '__main__':
+    keep_alive()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
